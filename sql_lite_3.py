@@ -17,3 +17,7 @@ cursor.execute("CREATE TABLE movie(title, year, score)")
 
 # .execute makes cursor perform some action specified in brackets.
 # CREATE TABLE is command for creating new table. UPPER case notation is standard for sql commands.
+
+
+
+## Pridan text abych videl jakym zpusobem se zmeny propisuji na GitHub
