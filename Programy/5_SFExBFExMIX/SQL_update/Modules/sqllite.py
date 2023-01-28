@@ -1,3 +1,5 @@
+# Module with SQLlite database management functions.
+
 import sqlite3
 import os
 
@@ -34,9 +36,9 @@ def create_table(database=str, table_name=str, columns_statement=str): # Functin
         if "no such table" in str(e):
             print(f"Database '{database}' does not exist")
         else:
-            print(e)
+            print(f'Error when connectiong to the database: {e}.')
     except Exception as e:
-        print(e)
+        print(f'Error when connectiong to the database: {e}')
     finally:
         # Close the connection
         conn.close()
@@ -78,6 +80,28 @@ def get_table_columns(database=str, table_name=str): # Returns list of columns n
     conn.close()
     return column_names    
 
+def get_count_records_in_table(database=str, table_name=str): # Returns number of lines of records in specified table in specified database.
+    
+    # Connect to the database
+    conn = sqlite3.connect(database)
+
+    # Create a cursor
+    cursor = conn.cursor()
+
+    # Return count of records in table, we want to delete
+    cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"')
+
+    # Result of fech is tupple with count of lines at 0th index.
+    r = cursor.fetchone()
+    count = r[0]
+    
+    print(f'There are no records in table: "{table_name}".') if count == 0 else print(f'There are {count} records in table "{table_name}".')
+    
+    # Close the connection
+    conn.close()
+
+    return count
+
 def show_all_records_database_in_table(database=str, table_name=str): # Shows all lines in given database and table with its headings.
     
     # Connect to the database
@@ -87,7 +111,7 @@ def show_all_records_database_in_table(database=str, table_name=str): # Shows al
     cursor = conn.cursor()
 
     # Retrieve the column names for table
-    column_names = get_table_columns(database, table_name)
+    column_names = get_table_columns(database, f'"{table_name}"')
 
     # Select all rows from the materials table
     cursor.execute(f'SELECT rowid, * FROM "{table_name}"')
@@ -223,7 +247,7 @@ def insert_records_into_database_into_table_from_file(database=str, table_name=s
                     if not item_exists(database, table_name, headings[unique_item_index], item):
                         print(f'Item {item} no found in table: {table_name} in database {database}.')
                         # Insert the item into the table            
-                        insert_item(database, table_name, table_column_names, item_values)
+                        insert_record(database, table_name, table_column_names, item_values)
 
                     else:
                         print(f'Item {item} already found in table: {table_name} in database {database}.')
@@ -236,7 +260,7 @@ def insert_records_into_database_into_table_from_file(database=str, table_name=s
                 else:
                     ## B] IF we want to insert each line from the file without checking, in item beeing inserted is already in datrabase. (will produce multiple records for each unique item)
                         # Insert the item into the table            
-                        insert_item(database, table_name, table_column_names, item_values)
+                        insert_record(database, table_name, table_column_names, item_values)
                 processed_lines += 1
 
                 # progres print    
@@ -249,7 +273,7 @@ def insert_records_into_database_into_table_from_file(database=str, table_name=s
         # Close the connection
         conn.close()            
 
-def insert_item(database=str, table_name=str, table_columns=list, item_values=list): # Function to insert new item into the table. values order must match the table_columns order.
+def insert_record(database=str, table_name=str, table_columns=list, item_values=list): # Function to insert new item into the table. values order must match the table_columns order.
     # Connect to the database
     conn = sqlite3.connect(database)
 
@@ -290,7 +314,7 @@ def insert_item(database=str, table_name=str, table_columns=list, item_values=li
     # Close the connection
     conn.close()
 
-def insert_many_items(database=str, table_name=str, records_values=list): # Function to insert multiple new records into the table. Records values is a list of tuples, where order of vaules in tuples must match the table_columns order.
+def insert_many_records(database=str, table_name=str, records_values=list): # Function to insert multiple new records into the table. Records values is a list of tuples, where order of vaules in tuples must match the table_columns order.
     
     # Get column names of table records are being inserted into
     print(f'getting column names of destination table...')
@@ -307,17 +331,23 @@ def insert_many_items(database=str, table_name=str, records_values=list): # Func
         
     # Destinations columns SQL clause str
     columns_str = ", ".join((f'"{t_c}"' for t_c in table_column_names))
-    # print(columns_str)
+    print(columns_str)
 
     # Values placeholdesr str
     placeholders = ", ".join(["?" for c in table_column_names])
-    # print(placeholders)
+    print(placeholders)
 
     # Values to be inserted for record (must be is same order as column order)
     # print(item_values)
 
+
     # Insert into table
-    cursor.executemany(f'INSERT INTO "{table_name}" ({columns_str}) VALUES ({placeholders})', records_values)
+    # cursor.executemany(f'INSERT INTO "{table_name}" ({columns_str}) VALUES ({placeholders})', records_values)
+    for record in records_values:
+        try:
+            cursor.execute(f'INSERT INTO "{table_name}" ({columns_str}) VALUES ({placeholders})', record)
+        except:
+            print(record) 
 
     print(f'Records succesfully inserted into database:')
     # Check the newly added record
@@ -425,3 +455,100 @@ def update_record(database=str, table_name=str, item_column_name=str, item=str, 
     # Close the cursor and connection
     cursor.close()
     conn.close()
+
+def delete_table(database=str, table_name=str): # Deletes specified table from specified database, if such table in in.
+
+    # Connectiong to database
+    conn = sqlite3.connect(database)
+    
+    # Create a cursor
+    cursor = conn.cursor()
+    
+    # Execute a SELECT statement to check if requested table exists in database
+    cursor.execute(f'SELECT name FROM sqlite_master WHERE type="table" AND name= "{table_name}"')
+    r = cursor.fetchall()
+
+    # If such table not in database, return error
+    if not r:
+        print(f'No such table with name: {table_name} found in database {database}. Cannot delete table.')
+        return
+
+    # Get number of records i table in database
+    n = get_count_records_in_table(database, table_name)
+
+    # Ask user confirmation of deleting table
+    print(f'Are you sure, you want to delete teble: {table_name} from database {database}?\nThis cannot be undode, all records in table will be lost.')
+    i = ""
+    while i not in ["e", "s"]:
+        i=input(f'Confirm D[E]leting or [S]torno Deleting :').lower()
+
+    print(i)
+    # End deletion, if Storned by user
+    if i == "s":
+        print(f'Deletion aborted by user. Table {table_name} remains unchanged in database.')
+        return 
+    
+    # Else, drop table from database
+    cursor.execute(f'DROP TABLE "{table_name}"')
+
+    # Commint the changes to database
+    conn.commit()
+    print(f'Table {table_name} succesfully deleted from database {database}')
+
+    # Close the connection
+    conn.close()
+
+def create_index_on_column(database=str, table_name=str, column_name=str): # Creates index on column of specific name in specified table in specified database.
+
+    # Connectiong to database
+    conn = sqlite3.connect(database)
+    
+    # Create a cursor
+    cursor = conn.cursor()
+    print(column_name)
+    
+    # Naming the index
+    c_str = [str.strip() for str in column_name.split(" ")]
+    c_str.append("index")
+    c_str = "_".join(c_str)
+    print(c_str)
+    
+    # Create index
+    cursor.execute(f'CREATE INDEX {c_str} ON {table_name} ("{column_name}")')
+
+    # commiting the changes
+    conn.commit()
+
+    # Closing the connection
+    conn.close()
+
+def vacuum_database(database=str): # Somehow cleans and rebuilds the database file. Should be used after some major alternation to the database has been made.
+
+    # Connect to the database
+    conn = sqlite3.connect(database)
+    conn.isolation_level = None
+
+    # Create a cursor
+    cursor = conn.cursor()
+
+    # Vacuum the database
+    cursor.execute("VACUUM")
+
+    # Commit the changes and close the connection
+    conn.commit()
+    conn.close()
+
+def get_pn_in_monuments(data=list): # 
+
+    # list of tuples all pns with its monuments
+    all_pn = list()
+
+    for line in data:
+        # Set final m and its BOM
+        final_monument = line[0]
+        monument_bom = line[1:]
+        
+        for pn in monument_bom:
+            if (pn, final_monument) not in all_pn:
+                all_pn.append((pn, final_monument))    
+    return all_pn

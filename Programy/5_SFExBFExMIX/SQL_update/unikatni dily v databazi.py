@@ -1,3 +1,5 @@
+# Priravny dotaz na ziskani seznamu unikatnich dilu v cele databazi kusovniku. Vrati txt soubor se seznamem unikatnich dilu.
+
 import os
 import sqlite3
 import time
