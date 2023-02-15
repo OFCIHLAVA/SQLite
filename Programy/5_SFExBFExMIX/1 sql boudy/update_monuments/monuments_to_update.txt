@@ -1,0 +1,6 @@
+final monument	description	program	specific rules
+101621-1	MARIE	MArik	svobodna
+Run	NULL	NULL	NULL
+101623-1	RH DOGHOUSE L54	ONDRA	NULL
+101625-1	rott	ONDRA	zrzek
+101626-101	AFT LH CLOSET/DOGHOUSE	ONDRA	NULL
