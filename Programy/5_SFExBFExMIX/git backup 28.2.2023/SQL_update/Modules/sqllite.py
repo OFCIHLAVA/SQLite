@@ -704,13 +704,19 @@ def delete_many_records(database=str, table_name=str, table_column_names=list, r
         
         # Prgress the status (select batches accounts for 0-50 % progress)
         already_processed_parts +=1
-        progress_callback(already_processed_parts, count_progress_parts)
+        try:
+            progress_callback(already_processed_parts, count_progress_parts)
+        except:
+            pass        
         print(f'{len(records_to_be_deleted)} records will be deleted')         
     # If nothing to be deleted → return error info
     if not records_to_be_deleted:
-       print(f'WARNING! No record matches given criteria → Nothing deleted.')
-       progress_callback(1, 1)
-       return
+        print(f'WARNING! No record matches given criteria → Nothing deleted.')
+        try:
+            progress_callback(1, 1)
+        except:
+            pass       
+        return
 
     # Else delete records matchind records in each batch
     for i, batch in enumerate(delete_values_batches):
@@ -723,7 +729,10 @@ def delete_many_records(database=str, table_name=str, table_column_names=list, r
 
         # Prgress the status (delete batches accounts for 50 -100 % progress)
         already_processed_parts +=1
-        progress_callback(already_processed_parts, count_progress_parts)
+        try:
+            progress_callback(already_processed_parts, count_progress_parts)
+        except:
+            pass    
 
     # Close the connection
     conn.close()

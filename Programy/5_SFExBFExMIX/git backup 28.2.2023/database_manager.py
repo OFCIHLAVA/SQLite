@@ -116,11 +116,15 @@ def update_database_bom_from_txt_list(database_path=str, txt_list_path=str, prog
             # Nacteni txt souboru, kde jsou data k updatovani
             with open(txt_list_path, "r", encoding = "UTF-8") as f:
                 # Reversed order of fields in result tuples is because in source file fields are in reversed order vs colums in tearget table (their position needs to be switched)
-                dily_monumenty_pridat = list(set([tuple([field.strip() for field in line.split('\t')]) for line in f if line.strip()]))
+                dily_monumenty_pridat = [tuple([field.strip() for field in line.split('\t')]) for line in f if line.strip()]
                 zahlavi_dat = dily_monumenty_pridat[0]
                 # Odstraneni zahlavi ze samotnych dat
                 dily_monumenty_pridat.pop(0)
                 print(f'Zahlavi souboru: {zahlavi_dat}')
+                
+                # Odstraneni duplicitnich dat
+                dily_monumenty_pridat = list(set(dily_monumenty_pridat))
+
                 print(f'Pocet radek v soubory s daty: {len(dily_monumenty_pridat)}')
                 
 
@@ -230,13 +234,14 @@ def add_many_monumnets(database_path=str, monuments_to_add_file_path=str, progre
                 monumenty_pridat = [[field.strip() for field in line.split('\t')] for line in f if line.strip()]
             # Repalce empty values by default value "?" to be inserted into database
             monumenty_pridat = [tuple([field if field else "?" for field in monument]) for monument in monumenty_pridat]
+            # Odstraneni zahlavi ze samotnych dat
+            zahlavi_dat = monumenty_pridat[0]
+            print(f'Zahlavi souboru: {zahlavi_dat}')
+            monumenty_pridat.pop(0)            
+            
             # Remove duplicates (to set and back)
             monumenty_pridat = list(set(monumenty_pridat))
-                
-            zahlavi_dat = monumenty_pridat[0]
-            # Odstraneni zahlavi ze samotnych dat
-            monumenty_pridat.pop(0)
-            print(f'Zahlavi souboru: {zahlavi_dat}')
+
             print(f'Pocet radek v soubory s daty: {len(monumenty_pridat)}')
             # Check, if data in file are valid. (each line has exactly 4 elements)
             for line in monumenty_pridat:
@@ -282,13 +287,17 @@ def update_many_monuments(database_path=str, update_file_path=str): # Function t
             # Nacteni txt souboru, kde jsou data k updatovani
             with open(update_file_path, "r", encoding = "UTF-8") as f:
                 monumenty_updatovat = [tuple([field.strip() for field in line.split('\t')]) for line in f if line.strip()]
-                zahlavi_dat =monumenty_updatovat[0]
 
-                # Odstraneni zahlavi ze samotnych dat
-                monumenty_updatovat.pop(0)
-                print(f'Zahlavi souboru: {zahlavi_dat}')
-                print(f'Pocet radek v soubory s daty: {len(monumenty_updatovat)}')
-                # print(data)
+            # Odstraneni zahlavi ze samotnych dat
+            zahlavi_dat = monumenty_updatovat[0]
+            monumenty_updatovat.pop(0)
+            print(f'Zahlavi souboru: {zahlavi_dat}')
+            
+            # Remove duplicates
+            monumenty_updatovat = list(set(monumenty_updatovat))
+
+            print(f'Pocet radek v soubory s daty: {len(monumenty_updatovat)}')
+            # print(data)
 
             # Get column names in target table
             tcs = sqllite.get_table_columns(database_path, "boudyXprogramy")
